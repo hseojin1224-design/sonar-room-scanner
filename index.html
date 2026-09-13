@@ -212,7 +212,7 @@
     <div id="app-container">
         <div id="header">
             <h1>🔊 SONAR ROOM SCANNER V6</h1>
-            <p>iPhone 실제 마이크 + 방향 센서</p>
+            <p>시뮬레이션 모드 - 방향 센서</p>
         </div>
 
         <div id="error-message"></div>
@@ -226,7 +226,7 @@
             </div>
             <div class="stat-box">
                 <div class="stat-value" id="audio-level">0%</div>
-                <div class="stat-label">마이크 반응</div>
+                <div class="stat-label">신호 강도</div>
             </div>
             <div class="stat-box">
                 <div class="stat-value" id="direction-value">--°</div>
@@ -243,32 +243,26 @@
         </div>
 
         <div id="disclaimer">
-            ⚠️ 이 앱은 실제 마이크의 음향 반응을 시각화합니다. 정확한 벽까지의 거리를 측정하는 전문 소나가 아닙니다.
+            ⚠️ 시뮬레이션 모드: 방향 센서와 무작위 신호로 작동합니다.
         </div>
 
         <div id="controls">
             <button id="btn-start">🎙 측정 시작</button>
-            <button id="btn-test">🔊 테스트 소리</button>
+            <button id="btn-test">🔊 신호 생성</button>
             <button id="btn-reset">↻ 초기화</button>
             <button id="btn-stop">■ 정지</button>
         </div>
     </div>
 
     <script>
-        'use strict';
-
         class SonarRoomScanner {
             constructor() {
-                // State variables
                 this.isRunning = false;
-                this.audioContext = null;
-                this.analyser = null;
-                this.mediaStreamSource = null;
-                this.mediaStream = null;
                 this.currentDirection = null;
                 this.radarPoints = [];
                 this.lastUpdateTime = 0;
                 this.measurementRAFId = null;
+                this.simulationLevel = 0;
 
                 // DOM elements
                 this.canvas = document.getElementById('radar-canvas');
@@ -284,26 +278,23 @@
                 this.pointCount = document.getElementById('point-count');
                 this.errorMessage = document.getElementById('error-message');
 
-                // Validate critical DOM elements
-                if (!this.canvas || !this.ctx || !this.btnStart || !this.statusText) {
-                    console.error('Critical DOM elements missing');
+                if (!this.canvas || !this.ctx) {
+                    console.error('Canvas not found');
                     return;
                 }
 
-                // Setup event listeners
                 this.btnStart.addEventListener('click', () => this.startMeasurement());
-                this.btnTest.addEventListener('click', () => this.playTestSound());
+                this.btnTest.addEventListener('click', () => this.generateTestSignal());
                 this.btnReset.addEventListener('click', () => this.reset());
                 this.btnStop.addEventListener('click', () => this.stop());
 
                 window.addEventListener('resize', () => this.resizeCanvas());
                 window.addEventListener('deviceorientation', (e) => this.handleDeviceOrientation(e));
 
-                // Initial setup
                 this.resizeCanvas();
                 this.updateStatus('준비', 'ready');
                 this.updateButtonStates();
-                console.log('✓ SonarRoomScanner initialized');
+                console.log('✓ SONAR initialized (simulation mode)');
             }
 
             updateStatus(text, lightClass) {
@@ -314,142 +305,7 @@
             updateButtonStates() {
                 if (this.btnStart) this.btnStart.disabled = this.isRunning;
                 if (this.btnStop) this.btnStop.disabled = !this.isRunning;
-                if (this.btnTest) this.btnTest.disabled = !this.audioContext;
                 if (this.btnReset) this.btnReset.disabled = this.radarPoints.length === 0;
-            }
-
-            showError(message) {
-                if (this.errorMessage) {
-                    this.errorMessage.textContent = '❌ ' + message;
-                    this.errorMessage.classList.add('show');
-                }
-                this.updateStatus('오류', 'error');
-                console.error('[ERROR]', message);
-            }
-
-            clearError() {
-                if (this.errorMessage) this.errorMessage.classList.remove('show');
-            }
-
-            checkHTTPS() {
-                const isLocalhost = window.location.hostname === 'localhost' || 
-                                   window.location.hostname === '127.0.0.1';
-                const isHTTPS = window.location.protocol === 'https:';
-                
-                if (!isHTTPS && !isLocalhost) {
-                    this.showError('HTTPS가 필요합니다.');
-                    return false;
-                }
-                return true;
-            }
-
-            async startMicrophone() {
-                try {
-                    console.log('Starting microphone...');
-
-                    if (!this.checkHTTPS()) {
-                        return false;
-                    }
-
-                    // Check browser support
-                    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-                        this.showError('마이크를 지원하지 않습니다.');
-                        return false;
-                    }
-
-                    this.updateStatus('마이크 권한 요청 중', 'requesting');
-
-                    // Request microphone access
-                    this.mediaStream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false,
-                            autoGainControl: false
-                        }
-                    });
-
-                    console.log('✓ Media stream obtained');
-
-                    // Create or verify AudioContext
-                    if (!this.audioContext) {
-                        const AudioContext = window.AudioContext || window.webkitAudioContext;
-                        if (!AudioContext) {
-                            this.showError('AudioContext를 지원하지 않습니다.');
-                            return false;
-                        }
-
-                        try {
-                            this.audioContext = new AudioContext();
-                            console.log('✓ AudioContext created, state:', this.audioContext.state);
-                        } catch (e) {
-                            this.showError('AudioContext 생성 실패: ' + e.message);
-                            return false;
-                        }
-                    }
-
-                    // Resume if suspended
-                    if (this.audioContext.state === 'suspended') {
-                        await this.audioContext.resume();
-                        console.log('✓ AudioContext resumed');
-                    }
-
-                    // Create analyser
-                    if (!this.analyser) {
-                        try {
-                            this.analyser = this.audioContext.createAnalyser();
-                            this.analyser.fftSize = 2048;
-                            console.log('✓ Analyser created');
-                        } catch (e) {
-                            this.showError('Analyser 생성 실패: ' + e.message);
-                            return false;
-                        }
-                    }
-
-                    // Connect microphone to analyser
-                    if (!this.mediaStreamSource) {
-                        try {
-                            this.mediaStreamSource = this.audioContext.createMediaStreamAudioSource(this.mediaStream);
-                            console.log('✓ MediaStreamAudioSource created');
-                        } catch (e) {
-                            this.showError('미디어스트림 소스 생성 실패: ' + e.message);
-                            return false;
-                        }
-                    }
-
-                    // Connect source to analyser
-                    try {
-                        if (this.mediaStreamSource && this.analyser) {
-                            this.mediaStreamSource.connect(this.analyser);
-                            console.log('✓ Connected to analyser');
-                        } else {
-                            this.showError('미디어 소스 또는 분석기 없음');
-                            return false;
-                        }
-                    } catch (e) {
-                        this.showError('연결 실패: ' + e.message);
-                        return false;
-                    }
-
-                    this.updateStatus('마이크 연결 성공', 'active');
-                    this.clearError();
-                    return true;
-
-                } catch (error) {
-                    console.error('[CATCH ERROR]', error.name, error.message);
-                    
-                    const errorName = error.name || 'Unknown';
-
-                    if (errorName === 'NotAllowedError') {
-                        this.showError('마이크 권한이 거부되었습니다.');
-                    } else if (errorName === 'NotFoundError') {
-                        this.showError('마이크 장치를 찾을 수 없습니다.');
-                    } else if (errorName === 'NotReadableError') {
-                        this.showError('마이크 장치를 사용할 수 없습니다.');
-                    } else {
-                        this.showError('마이크 오류: ' + error.message);
-                    }
-                    return false;
-                }
             }
 
             handleDeviceOrientation(event) {
@@ -471,102 +327,48 @@
             }
 
             async requestDeviceOrientationPermission() {
-                if (typeof DeviceOrientationEvent === 'undefined') {
-                    return true;
-                }
-
-                if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
-                    return true;
-                }
+                if (typeof DeviceOrientationEvent === 'undefined') return true;
+                if (typeof DeviceOrientationEvent.requestPermission !== 'function') return true;
 
                 this.updateStatus('방향 센서 권한 요청', 'requesting');
                 try {
                     const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission === 'granted') {
-                        this.clearError();
                         console.log('✓ Device orientation permission granted');
                         return true;
-                    } else {
-                        console.log('Device orientation permission denied');
-                        return false;
                     }
+                    return false;
                 } catch (error) {
                     console.error('Device orientation error:', error.message);
                     return false;
                 }
             }
 
-            getAudioLevel() {
-                if (!this.analyser) return 0;
-
-                try {
-                    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-                    this.analyser.getByteFrequencyData(dataArray);
-
-                    let sum = 0;
-                    for (let i = 0; i < dataArray.length; i++) {
-                        const normalized = dataArray[i] / 255;
-                        sum += normalized * normalized;
-                    }
-                    const rms = Math.sqrt(sum / dataArray.length);
-                    return Math.min(100, Math.round(rms * 100));
-                } catch (e) {
-                    console.error('Audio level calculation error:', e.message);
-                    return 0;
-                }
-            }
-
-            playTestSound() {
-                if (!this.audioContext) {
-                    this.showError('오디오 컨텍스트가 준비되지 않았습니다.');
-                    return;
-                }
-
-                try {
-                    if (this.audioContext.state === 'suspended') {
-                        this.audioContext.resume();
-                    }
-
-                    const now = this.audioContext.currentTime;
-                    const duration = 0.2;
-
-                    const osc = this.audioContext.createOscillator();
-                    const gain = this.audioContext.createGain();
-
-                    osc.frequency.value = 400;
-                    osc.connect(gain);
-                    gain.connect(this.audioContext.destination);
-
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-
-                    osc.start(now);
-                    osc.stop(now + duration);
-                    console.log('✓ Test sound played');
-                } catch (error) {
-                    this.showError('테스트 음 오류: ' + error.message);
-                }
+            generateTestSignal() {
+                this.simulationLevel = Math.min(100, this.simulationLevel + 20);
+                console.log('✓ Test signal generated, level:', this.simulationLevel);
             }
 
             startMeasurement() {
-                if (!this.checkHTTPS()) return;
-
-                this.startMicrophone().then(success => {
-                    if (success) {
-                        this.isRunning = true;
-                        this.updateStatus('측정 중', 'active');
-                        this.updateButtonStates();
-                        this.requestDeviceOrientationPermission();
-                        this.measurementLoop();
-                    }
-                });
+                this.isRunning = true;
+                this.updateStatus('측정 중', 'active');
+                this.updateButtonStates();
+                this.requestDeviceOrientationPermission();
+                this.measurementLoop();
             }
 
             measurementLoop() {
                 if (!this.isRunning) return;
 
                 const now = performance.now();
-                const level = this.getAudioLevel();
+
+                // Simulate audio level with decay
+                this.simulationLevel = Math.max(0, this.simulationLevel - 2);
+                if (Math.random() < 0.1) {
+                    this.simulationLevel = Math.min(100, this.simulationLevel + Math.random() * 30);
+                }
+
+                const level = Math.round(this.simulationLevel);
 
                 if (this.audioLevel) {
                     this.audioLevel.textContent = level + '%';
@@ -715,6 +517,7 @@
 
             reset() {
                 this.radarPoints = [];
+                this.simulationLevel = 0;
                 if (this.pointCount) this.pointCount.textContent = '0';
                 if (this.audioLevel) this.audioLevel.textContent = '0%';
                 if (this.directionValue) this.directionValue.textContent = '--°';
@@ -728,22 +531,6 @@
                 if (this.measurementRAFId) {
                     cancelAnimationFrame(this.measurementRAFId);
                 }
-                if (this.mediaStream) {
-                    this.mediaStream.getTracks().forEach(track => {
-                        try {
-                            track.stop();
-                        } catch (e) {
-                            console.error('Error stopping track:', e.message);
-                        }
-                    });
-                }
-                if (this.audioContext && this.audioContext.state !== 'closed') {
-                    try {
-                        this.audioContext.close();
-                    } catch (e) {
-                        console.error('Error closing audio context:', e.message);
-                    }
-                }
             }
         }
 
@@ -752,9 +539,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 sonarApp = new SonarRoomScanner();
-                console.log('✓ Application loaded successfully');
             } catch (e) {
-                console.error('[INIT ERROR]', e.message);
+                console.error('Init error:', e.message);
             }
         });
 
