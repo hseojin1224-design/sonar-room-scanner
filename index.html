@@ -353,9 +353,10 @@
                 this.errorMessage.textContent = '❌ ' + message;
                 this.errorMessage.classList.add('show');
                 this.updateStatus('오류', 'error');
+                console.error('SONAR Error:', message);
                 setTimeout(() => {
                     this.errorMessage.classList.remove('show');
-                }, 5000);
+                }, 6000);
             }
 
             clearError() {
@@ -379,24 +380,25 @@
             // ============================================
 
             async startMicrophone() {
-                if (!this.checkHTTPS()) {
-                    return false;
-                }
-
-                // Check mediaDevices availability
-                if (!navigator.mediaDevices) {
-                    this.showError('mediaDevices를 지원하지 않습니다.');
-                    return false;
-                }
-
-                if (!navigator.mediaDevices.getUserMedia) {
-                    this.showError('getUserMedia를 지원하지 않습니다.');
-                    return false;
-                }
-
-                this.updateStatus('마이크 권한 요청 중', 'requesting');
-
                 try {
+                    if (!this.checkHTTPS()) {
+                        return false;
+                    }
+
+                    // Check mediaDevices availability
+                    if (!navigator.mediaDevices) {
+                        this.showError('mediaDevices를 지원하지 않습니다.');
+                        return false;
+                    }
+
+                    if (!navigator.mediaDevices.getUserMedia) {
+                        this.showError('getUserMedia를 지원하지 않습니다.');
+                        return false;
+                    }
+
+                    this.updateStatus('마이크 권한 요청 중', 'requesting');
+
+                    // Get media stream
                     this.mediaStream = await navigator.mediaDevices.getUserMedia({
                         audio: {
                             echoCancellation: false,
@@ -404,6 +406,8 @@
                             autoGainControl: false
                         }
                     });
+
+                    console.log('Media stream obtained:', this.mediaStream);
 
                     // Create audio context after successful permission
                     if (!this.audioContext) {
@@ -415,6 +419,7 @@
 
                         try {
                             this.audioContext = new AudioContextClass();
+                            console.log('AudioContext created');
                         } catch (e) {
                             this.showError('AudioContext 초기화 실패: ' + e.message);
                             return false;
@@ -423,24 +428,47 @@
 
                     // Resume audio context if suspended (common in iOS)
                     if (this.audioContext.state === 'suspended') {
+                        console.log('Resuming suspended AudioContext');
                         await this.audioContext.resume();
                     }
 
                     // Create analyser node
                     if (!this.analyser) {
-                        this.analyser = this.audioContext.createAnalyser();
-                        this.analyser.fftSize = 2048;
+                        try {
+                            this.analyser = this.audioContext.createAnalyser();
+                            this.analyser.fftSize = 2048;
+                            console.log('Analyser created');
+                        } catch (e) {
+                            this.showError('Analyser 생성 실패: ' + e.message);
+                            return false;
+                        }
                     }
 
                     // Create microphone source
-                    this.microphone = this.audioContext.createMediaStreamAudioSource(this.mediaStream);
-                    this.microphone.connect(this.analyser);
+                    try {
+                        if (!this.microphone) {
+                            this.microphone = this.audioContext.createMediaStreamAudioSource(this.mediaStream);
+                            console.log('Microphone source created');
+                        }
+                        
+                        // Connect safely
+                        if (this.microphone && this.analyser) {
+                            this.microphone.connect(this.analyser);
+                            console.log('Microphone connected to analyser');
+                        } else {
+                            throw new Error('Microphone or Analyser is null');
+                        }
+                    } catch (e) {
+                        this.showError('오디오 연결 실패: ' + e.message);
+                        return false;
+                    }
 
                     this.updateStatus('마이크 연결 성공', 'active');
                     this.clearError();
                     return true;
 
                 } catch (error) {
+                    console.error('Microphone error:', error);
                     const errorName = error.name || 'Unknown';
                     const errorMsg = error.message || 'Unknown error';
 
@@ -508,20 +536,25 @@
             getAudioLevel() {
                 if (!this.analyser) return 0;
 
-                const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-                this.analyser.getByteFrequencyData(dataArray);
+                try {
+                    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    this.analyser.getByteFrequencyData(dataArray);
 
-                // Calculate RMS (Root Mean Square)
-                let sum = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    const normalized = dataArray[i] / 255;
-                    sum += normalized * normalized;
+                    // Calculate RMS (Root Mean Square)
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        const normalized = dataArray[i] / 255;
+                        sum += normalized * normalized;
+                    }
+                    const rms = Math.sqrt(sum / dataArray.length);
+
+                    // Convert to percentage (0-100)
+                    const percentage = Math.min(100, Math.round(rms * 100));
+                    return percentage;
+                } catch (e) {
+                    console.error('Audio level calculation error:', e);
+                    return 0;
                 }
-                const rms = Math.sqrt(sum / dataArray.length);
-
-                // Convert to percentage (0-100)
-                const percentage = Math.min(100, Math.round(rms * 100));
-                return percentage;
             }
 
             // ============================================
@@ -556,6 +589,7 @@
 
                     osc.start(now);
                     osc.stop(now + duration);
+                    console.log('Test sound played');
                 } catch (error) {
                     this.showError('테스트 음 재생 오류: ' + error.message);
                 }
@@ -622,99 +656,103 @@
             }
 
             drawRadar() {
-                // Clear canvas
-                this.ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                try {
+                    // Clear canvas
+                    this.ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                if (!this.radius) return;
+                    if (!this.radius) return;
 
-                // Draw grid circles
-                this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
-                this.ctx.lineWidth = 1;
-                for (let i = 1; i <= 4; i++) {
-                    const r = (this.radius / 4) * i;
+                    // Draw grid circles
+                    this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+                    this.ctx.lineWidth = 1;
+                    for (let i = 1; i <= 4; i++) {
+                        const r = (this.radius / 4) * i;
+                        this.ctx.beginPath();
+                        this.ctx.arc(this.centerX, this.centerY, r, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                    }
+
+                    // Draw cardinal directions
+                    this.ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
+                    this.ctx.font = 'bold 12px Courier New';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+
+                    const directions = [
+                        { label: 'N', angle: 0 },
+                        { label: 'E', angle: 90 },
+                        { label: 'S', angle: 180 },
+                        { label: 'W', angle: 270 }
+                    ];
+
+                    directions.forEach(d => {
+                        const rad = (d.angle - 90) * Math.PI / 180;
+                        const x = this.centerX + Math.cos(rad) * (this.radius + 15);
+                        const y = this.centerY + Math.sin(rad) * (this.radius + 15);
+                        this.ctx.fillText(d.label, x, y);
+                    });
+
+                    // Draw axis lines
+                    this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+                    this.ctx.lineWidth = 1;
                     this.ctx.beginPath();
-                    this.ctx.arc(this.centerX, this.centerY, r, 0, Math.PI * 2);
-                    this.ctx.stroke();
-                }
-
-                // Draw cardinal directions
-                this.ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
-                this.ctx.font = 'bold 12px Courier New';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-
-                const directions = [
-                    { label: 'N', angle: 0 },
-                    { label: 'E', angle: 90 },
-                    { label: 'S', angle: 180 },
-                    { label: 'W', angle: 270 }
-                ];
-
-                directions.forEach(d => {
-                    const rad = (d.angle - 90) * Math.PI / 180;
-                    const x = this.centerX + Math.cos(rad) * (this.radius + 15);
-                    const y = this.centerY + Math.sin(rad) * (this.radius + 15);
-                    this.ctx.fillText(d.label, x, y);
-                });
-
-                // Draw axis lines
-                this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.centerX, this.centerY - this.radius);
-                this.ctx.lineTo(this.centerX, this.centerY + this.radius);
-                this.ctx.stroke();
-
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.centerX - this.radius, this.centerY);
-                this.ctx.lineTo(this.centerX + this.radius, this.centerY);
-                this.ctx.stroke();
-
-                // Draw measurement points
-                this.radarPoints.forEach(point => {
-                    const angle = (point.direction - 90) * Math.PI / 180;
-                    const distance = (point.level / 100) * this.radius;
-                    const x = this.centerX + Math.cos(angle) * distance;
-                    const y = this.centerY + Math.sin(angle) * distance;
-
-                    // Draw point
-                    const hue = point.level * 1.2; // Color based on level
-                    this.ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, 3, 0, Math.PI * 2);
-                    this.ctx.fill();
-                });
-
-                // Draw current direction indicator
-                if (this.currentDirection !== null) {
-                    const angle = (this.currentDirection - 90) * Math.PI / 180;
-                    const endX = this.centerX + Math.cos(angle) * this.radius;
-                    const endY = this.centerY + Math.sin(angle) * this.radius;
-
-                    this.ctx.strokeStyle = '#00ff88';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(this.centerX, this.centerY);
-                    this.ctx.lineTo(endX, endY);
+                    this.ctx.moveTo(this.centerX, this.centerY - this.radius);
+                    this.ctx.lineTo(this.centerX, this.centerY + this.radius);
                     this.ctx.stroke();
 
-                    // Arrow head
-                    const arrowSize = 8;
-                    const arrowAngle1 = angle + Math.PI / 6;
-                    const arrowAngle2 = angle - Math.PI / 6;
-                    const ax1 = endX + Math.cos(arrowAngle1) * arrowSize;
-                    const ay1 = endY + Math.sin(arrowAngle1) * arrowSize;
-                    const ax2 = endX + Math.cos(arrowAngle2) * arrowSize;
-                    const ay2 = endY + Math.sin(arrowAngle2) * arrowSize;
-
                     this.ctx.beginPath();
-                    this.ctx.moveTo(endX, endY);
-                    this.ctx.lineTo(ax1, ay1);
-                    this.ctx.lineTo(ax2, ay2);
-                    this.ctx.closePath();
-                    this.ctx.fillStyle = '#00ff88';
-                    this.ctx.fill();
+                    this.ctx.moveTo(this.centerX - this.radius, this.centerY);
+                    this.ctx.lineTo(this.centerX + this.radius, this.centerY);
+                    this.ctx.stroke();
+
+                    // Draw measurement points
+                    this.radarPoints.forEach(point => {
+                        const angle = (point.direction - 90) * Math.PI / 180;
+                        const distance = (point.level / 100) * this.radius;
+                        const x = this.centerX + Math.cos(angle) * distance;
+                        const y = this.centerY + Math.sin(angle) * distance;
+
+                        // Draw point
+                        const hue = point.level * 1.2; // Color based on level
+                        this.ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                        this.ctx.beginPath();
+                        this.ctx.arc(x, y, 3, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    });
+
+                    // Draw current direction indicator
+                    if (this.currentDirection !== null) {
+                        const angle = (this.currentDirection - 90) * Math.PI / 180;
+                        const endX = this.centerX + Math.cos(angle) * this.radius;
+                        const endY = this.centerY + Math.sin(angle) * this.radius;
+
+                        this.ctx.strokeStyle = '#00ff88';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.centerX, this.centerY);
+                        this.ctx.lineTo(endX, endY);
+                        this.ctx.stroke();
+
+                        // Arrow head
+                        const arrowSize = 8;
+                        const arrowAngle1 = angle + Math.PI / 6;
+                        const arrowAngle2 = angle - Math.PI / 6;
+                        const ax1 = endX + Math.cos(arrowAngle1) * arrowSize;
+                        const ay1 = endY + Math.sin(arrowAngle1) * arrowSize;
+                        const ax2 = endX + Math.cos(arrowAngle2) * arrowSize;
+                        const ay2 = endY + Math.sin(arrowAngle2) * arrowSize;
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(endX, endY);
+                        this.ctx.lineTo(ax1, ay1);
+                        this.ctx.lineTo(ax2, ay2);
+                        this.ctx.closePath();
+                        this.ctx.fillStyle = '#00ff88';
+                        this.ctx.fill();
+                    }
+                } catch (e) {
+                    console.error('Canvas drawing error:', e);
                 }
             }
 
@@ -757,7 +795,12 @@
         let sonarApp = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            sonarApp = new SonarRoomScanner();
+            try {
+                sonarApp = new SonarRoomScanner();
+                console.log('SONAR ROOM SCANNER V6 initialized');
+            } catch (e) {
+                console.error('Failed to initialize SONAR:', e);
+            }
         });
 
         // Cleanup on page unload
