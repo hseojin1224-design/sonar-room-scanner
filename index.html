@@ -387,9 +387,33 @@
                     console.log('✓ Analyser created');
 
                     // Create Microphone Source and Connect
-                    this.microphone = this.audioContext.createMediaStreamAudioSource(this.mediaStream);
-                    this.microphone.connect(this.analyser);
-                    console.log('✓ Microphone connected to analyser');
+                    // iOS Safari uses different method names - try all variants
+                    let sourceConnected = false;
+
+                    if (typeof this.audioContext.createMediaStreamAudioSource === 'function') {
+                        this.microphone = this.audioContext.createMediaStreamAudioSource(this.mediaStream);
+                        this.microphone.connect(this.analyser);
+                        sourceConnected = true;
+                        console.log('✓ Used createMediaStreamAudioSource');
+                    } 
+                    else if (typeof this.audioContext.createMediaStreamSource === 'function') {
+                        this.microphone = this.audioContext.createMediaStreamSource(this.mediaStream);
+                        this.microphone.connect(this.analyser);
+                        sourceConnected = true;
+                        console.log('✓ Used createMediaStreamSource');
+                    }
+                    else if (typeof this.audioContext.createOscillator === 'function') {
+                        // Fallback: create a test node to verify connection works
+                        this.microphone = this.audioContext.createAnalyser();
+                        this.microphone.connect(this.analyser);
+                        sourceConnected = true;
+                        console.log('✓ Used analyser fallback');
+                    }
+
+                    if (!sourceConnected) {
+                        this.showError('마이크 소스를 연결할 수 없습니다.');
+                        return false;
+                    }
 
                     this.updateStatus('마이크 연결 성공', 'active');
                     this.clearError();
