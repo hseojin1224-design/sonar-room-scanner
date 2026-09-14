@@ -1,554 +1,1064 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>SONAR ROOM SCANNER V6</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FREQUENCY WALL SCANNER</title>
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            background: #0a0e27;
-            color: #00ff88;
-            font-family: 'Courier New', monospace;
-            overflow: hidden;
-        }
+<style>
+*{
+  box-sizing:border-box;
+}
 
-        #app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            padding: max(env(safe-area-inset-top), 8px) max(env(safe-area-inset-right), 8px) max(env(safe-area-inset-bottom), 8px) max(env(safe-area-inset-left), 8px);
-            gap: 8px;
-        }
+body{
+  margin:0;
+  background:#080b12;
+  color:#fff;
+  font-family:Arial,sans-serif;
+}
 
-        #header {
-            text-align: center;
-            padding: 8px 0;
-            border-bottom: 2px solid #00ff88;
-        }
+header{
+  padding:22px 16px;
+  text-align:center;
+  border-bottom:1px solid #202638;
+  background:#0c101b;
+}
 
-        #header h1 {
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
+header h1{
+  margin:0;
+  font-size:23px;
+}
 
-        #header p {
-            font-size: 11px;
-            opacity: 0.7;
-            margin: 0;
-        }
+header p{
+  margin:7px 0 0;
+  color:#8791a8;
+  font-size:13px;
+}
 
-        #status-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 12px;
-        }
+main{
+  max-width:900px;
+  margin:auto;
+  padding:14px;
+}
 
-        .status-box, .stat-box {
-            background: rgba(0, 255, 136, 0.05);
-            border: 1px solid #00ff88;
-            padding: 8px;
-            border-radius: 4px;
-            text-align: center;
-        }
+.panel{
+  background:#101522;
+  border:1px solid #20283a;
+  border-radius:18px;
+  padding:17px;
+  margin-bottom:14px;
+}
 
-        .status-label {
-            font-size: 10px;
-            opacity: 0.6;
-            margin-bottom: 2px;
-        }
+h2{
+  margin:0 0 15px;
+  font-size:17px;
+}
 
-        .status-value {
-            font-size: 14px;
-            font-weight: bold;
-            color: #00ff88;
-        }
+button{
+  border:0;
+  border-radius:12px;
+  padding:13px 16px;
+  background:#263149;
+  color:white;
+  font-size:14px;
+  cursor:pointer;
+}
 
-        .stat-box .stat-value {
-            font-size: 16px;
-            font-weight: bold;
-            color: #00ff88;
-        }
+button:active{
+  transform:scale(.97);
+}
 
-        .stat-box .stat-label {
-            font-size: 9px;
-            opacity: 0.6;
-            margin-top: 2px;
-        }
+#micBtn{
+  width:100%;
+  background:#315cff;
+  font-weight:bold;
+}
 
-        #radar-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 255, 136, 0.02);
-            border: 1px solid #00ff88;
-            border-radius: 4px;
-            min-height: 200px;
-            overflow: hidden;
-        }
+.status{
+  margin-top:12px;
+  padding:11px;
+  border-radius:10px;
+  background:#080b12;
+  color:#9aa5bb;
+  text-align:center;
+}
 
-        #radar-canvas {
-            max-width: 100%;
-            max-height: 100%;
-        }
+.meter{
+  height:12px;
+  background:#080b12;
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:12px;
+}
 
-        #error-message {
-            background: #ff3333;
-            color: #ffffff;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            display: none;
-            text-align: center;
-            border: 1px solid #ff6666;
-        }
+#meterBar{
+  width:0%;
+  height:100%;
+  background:#48d8ff;
+  transition:.08s;
+}
 
-        #error-message.show {
-            display: block;
-        }
+input[type=range]{
+  width:100%;
+}
 
-        #disclaimer {
-            background: rgba(255, 153, 0, 0.1);
-            border: 1px solid #ff9900;
-            padding: 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #ffcc00;
-        }
+.freqValue{
+  text-align:center;
+  font-size:28px;
+  font-weight:bold;
+  margin:10px;
+}
 
-        #controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-        }
+#pingBtn{
+  width:100%;
+  background:#1b9b73;
+}
 
-        button {
-            background: #00ff88;
-            color: #0a0e27;
-            border: none;
-            padding: 12px 8px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+.directionGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+}
 
-        button:active {
-            background: #00cc66;
-            transform: scale(0.98);
-        }
+.directionGrid button{
+  min-height:65px;
+}
 
-        button:disabled {
-            background: #444;
-            color: #888;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
+.directionGrid button.active{
+  background:#315cff;
+  box-shadow:0 0 18px #315cff66;
+}
 
-        .status-light {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 4px;
-            vertical-align: middle;
-        }
+#currentDirection{
+  text-align:center;
+  margin-top:14px;
+  color:#75dfff;
+}
 
-        .status-light.ready {
-            background: #ffff00;
-            box-shadow: 0 0 8px #ffff00;
-        }
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
 
-        .status-light.requesting {
-            background: #ffaa00;
-            box-shadow: 0 0 8px #ffaa00;
-            animation: pulse 1s infinite;
-        }
+.stats div{
+  background:#080b12;
+  border-radius:12px;
+  padding:12px;
+  text-align:center;
+}
 
-        .status-light.active {
-            background: #00ff88;
-            box-shadow: 0 0 8px #00ff88;
-        }
+.stats span{
+  display:block;
+  color:#7f899f;
+  font-size:11px;
+  margin-bottom:7px;
+}
 
-        .status-light.error {
-            background: #ff3333;
-            box-shadow: 0 0 8px #ff3333;
-        }
+.stats strong{
+  font-size:17px;
+}
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+canvas{
+  width:100%;
+  height:180px;
+  background:#070a10;
+  border-radius:12px;
+  margin-top:12px;
+}
 
-        @media (max-width: 375px) {
-            #header h1 { font-size: 16px; }
-            button { font-size: 12px; padding: 10px 6px; }
-        }
-    </style>
+.room{
+  width:min(90vw,500px);
+  height:min(90vw,500px);
+  max-height:500px;
+  margin:20px auto;
+  position:relative;
+  perspective:700px;
+}
+
+.wall{
+  position:absolute;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  border:2px solid #263149;
+  background:#111827;
+  color:#aab4ca;
+  font-weight:bold;
+  transition:.25s;
+}
+
+.wall small{
+  margin-top:7px;
+  color:#48d8ff;
+  font-size:11px;
+}
+
+.front{
+  left:25%;
+  top:5%;
+  width:50%;
+  height:15%;
+}
+
+.back{
+  left:25%;
+  bottom:5%;
+  width:50%;
+  height:15%;
+}
+
+.left{
+  left:5%;
+  top:25%;
+  width:15%;
+  height:50%;
+}
+
+.right{
+  right:5%;
+  top:25%;
+  width:15%;
+  height:50%;
+}
+
+.top{
+  left:25%;
+  top:25%;
+  width:50%;
+  height:15%;
+  transform:rotate(180deg);
+}
+
+.bottom{
+  left:25%;
+  bottom:25%;
+  width:50%;
+  height:15%;
+}
+
+.player{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  font-size:30px;
+  background:#315cff;
+  width:55px;
+  height:55px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  box-shadow:0 0 25px #315cff88;
+}
+
+.scanBtn{
+  width:100%;
+  margin-top:8px;
+  background:#6b42ff;
+}
+
+.clearBtn{
+  width:100%;
+  margin-top:8px;
+  background:#252b39;
+}
+
+.note{
+  color:#7f899f;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.warning{
+  padding:12px;
+  border-radius:12px;
+  background:#241d0c;
+  color:#d9c27b;
+  font-size:12px;
+  line-height:1.5;
+}
+
+@media(max-width:500px){
+  .stats strong{
+    font-size:14px;
+  }
+}
+</style>
 </head>
+
 <body>
-    <div id="app-container">
-        <div id="header">
-            <h1>🔊 SONAR ROOM SCANNER V6</h1>
-            <p>시뮬레이션 모드 - 방향 센서</p>
-        </div>
 
-        <div id="error-message"></div>
+<header>
+  <h1>📡 FREQUENCY WALL SCANNER</h1>
+  <p>실제 마이크 주파수 분석 · 방향별 벽면 반응 실험</p>
+</header>
 
-        <div id="status-stats">
-            <div class="status-box">
-                <div class="status-label">상태</div>
-                <div class="status-value">
-                    <span class="status-light ready"></span><span id="status-text">준비</span>
-                </div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="audio-level">0%</div>
-                <div class="stat-label">신호 강도</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="direction-value">--°</div>
-                <div class="stat-label">현재 방향</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="point-count">0</div>
-                <div class="stat-label">측정점</div>
-            </div>
-        </div>
+<main>
 
-        <div id="radar-container">
-            <canvas id="radar-canvas"></canvas>
-        </div>
+<section class="panel">
 
-        <div id="disclaimer">
-            ⚠️ 시뮬레이션 모드: 방향 센서와 무작위 신호로 작동합니다.
-        </div>
+  <h2>🎙 마이크</h2>
 
-        <div id="controls">
-            <button id="btn-start">🎙 측정 시작</button>
-            <button id="btn-test">🔊 신호 생성</button>
-            <button id="btn-reset">↻ 초기화</button>
-            <button id="btn-stop">■ 정지</button>
-        </div>
+  <button id="micBtn">마이크 시작</button>
+
+  <div class="status" id="status">
+    마이크 대기 중
+  </div>
+
+  <div class="meter">
+    <div id="meterBar"></div>
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>🔊 테스트 주파수</h2>
+
+  <input
+    id="freq"
+    type="range"
+    min="300"
+    max="5000"
+    value="880"
+    step="10"
+  >
+
+  <div class="freqValue">
+    <span id="freqText">880</span> Hz
+  </div>
+
+  <button id="pingBtn">
+    🔊 실제 테스트 소리 내기
+  </button>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>🧭 측정 방향</h2>
+
+  <div class="directionGrid">
+
+    <button data-dir="앞" class="active">
+      ⬆️<br>앞
+    </button>
+
+    <button data-dir="뒤">
+      ⬇️<br>뒤
+    </button>
+
+    <button data-dir="왼쪽">
+      ⬅️<br>왼쪽
+    </button>
+
+    <button data-dir="오른쪽">
+      ➡️<br>오른쪽
+    </button>
+
+    <button data-dir="위">
+      🔼<br>위
+    </button>
+
+    <button data-dir="아래">
+      🔽<br>아래
+    </button>
+
+  </div>
+
+  <div id="currentDirection">
+    현재 방향: 앞
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>📊 실시간 분석</h2>
+
+  <div class="stats">
+
+    <div>
+      <span>주파수</span>
+      <strong id="liveFreq">---</strong>
     </div>
 
-    <script>
-        class SonarRoomScanner {
-            constructor() {
-                this.isRunning = false;
-                this.currentDirection = null;
-                this.radarPoints = [];
-                this.lastUpdateTime = 0;
-                this.measurementRAFId = null;
-                this.simulationLevel = 0;
+    <div>
+      <span>신호 세기</span>
+      <strong id="level">---</strong>
+    </div>
 
-                // DOM elements
-                this.canvas = document.getElementById('radar-canvas');
-                this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
-                this.btnStart = document.getElementById('btn-start');
-                this.btnTest = document.getElementById('btn-test');
-                this.btnReset = document.getElementById('btn-reset');
-                this.btnStop = document.getElementById('btn-stop');
-                this.statusText = document.getElementById('status-text');
-                this.statusLight = document.querySelector('.status-light');
-                this.audioLevel = document.getElementById('audio-level');
-                this.directionValue = document.getElementById('direction-value');
-                this.pointCount = document.getElementById('point-count');
-                this.errorMessage = document.getElementById('error-message');
+    <div>
+      <span>반응</span>
+      <strong id="reaction">---</strong>
+    </div>
 
-                if (!this.canvas || !this.ctx) {
-                    console.error('Canvas not found');
-                    return;
-                }
+  </div>
 
-                this.btnStart.addEventListener('click', () => this.startMeasurement());
-                this.btnTest.addEventListener('click', () => this.generateTestSignal());
-                this.btnReset.addEventListener('click', () => this.reset());
-                this.btnStop.addEventListener('click', () => this.stop());
+  <canvas id="spectrum"></canvas>
 
-                window.addEventListener('resize', () => this.resizeCanvas());
-                window.addEventListener('deviceorientation', (e) => this.handleDeviceOrientation(e));
+</section>
 
-                this.resizeCanvas();
-                this.updateStatus('준비', 'ready');
-                this.updateButtonStates();
-                console.log('✓ SONAR initialized (simulation mode)');
-            }
 
-            updateStatus(text, lightClass) {
-                if (this.statusText) this.statusText.textContent = text;
-                if (this.statusLight) this.statusLight.className = 'status-light ' + lightClass;
-            }
+<section class="panel">
 
-            updateButtonStates() {
-                if (this.btnStart) this.btnStart.disabled = this.isRunning;
-                if (this.btnStop) this.btnStop.disabled = !this.isRunning;
-                if (this.btnReset) this.btnReset.disabled = this.radarPoints.length === 0;
-            }
+  <h2>🗺 6방향 벽면 지도</h2>
 
-            handleDeviceOrientation(event) {
-                let heading = null;
+  <div class="room">
 
-                if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
-                    heading = event.webkitCompassHeading;
-                } else if (event.alpha !== undefined) {
-                    heading = event.alpha;
-                }
+    <div class="wall front" id="wall-front">
+      앞
+      <small>---</small>
+    </div>
 
-                if (heading !== null && typeof heading === 'number') {
-                    heading = Math.round(heading) % 360;
-                    this.currentDirection = heading;
-                    if (this.directionValue) {
-                        this.directionValue.textContent = heading + '°';
-                    }
-                }
-            }
+    <div class="wall back" id="wall-back">
+      뒤
+      <small>---</small>
+    </div>
 
-            async requestDeviceOrientationPermission() {
-                if (typeof DeviceOrientationEvent === 'undefined') return true;
-                if (typeof DeviceOrientationEvent.requestPermission !== 'function') return true;
+    <div class="wall left" id="wall-left">
+      왼쪽
+      <small>---</small>
+    </div>
 
-                this.updateStatus('방향 센서 권한 요청', 'requesting');
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        console.log('✓ Device orientation permission granted');
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('Device orientation error:', error.message);
-                    return false;
-                }
-            }
+    <div class="wall right" id="wall-right">
+      오른쪽
+      <small>---</small>
+    </div>
 
-            generateTestSignal() {
-                this.simulationLevel = Math.min(100, this.simulationLevel + 20);
-                console.log('✓ Test signal generated, level:', this.simulationLevel);
-            }
+    <div class="wall top" id="wall-top">
+      위
+      <small>---</small>
+    </div>
 
-            startMeasurement() {
-                this.isRunning = true;
-                this.updateStatus('측정 중', 'active');
-                this.updateButtonStates();
-                this.requestDeviceOrientationPermission();
-                this.measurementLoop();
-            }
+    <div class="wall bottom" id="wall-bottom">
+      아래
+      <small>---</small>
+    </div>
 
-            measurementLoop() {
-                if (!this.isRunning) return;
+    <div class="player">
+      📱
+    </div>
 
-                const now = performance.now();
+  </div>
 
-                // Simulate audio level with decay
-                this.simulationLevel = Math.max(0, this.simulationLevel - 2);
-                if (Math.random() < 0.1) {
-                    this.simulationLevel = Math.min(100, this.simulationLevel + Math.random() * 30);
-                }
+  <button class="scanBtn" id="scanAll">
+    🔄 6방향 측정값 기록
+  </button>
 
-                const level = Math.round(this.simulationLevel);
+  <button class="clearBtn" id="clearBtn">
+    🗑 기록 초기화
+  </button>
 
-                if (this.audioLevel) {
-                    this.audioLevel.textContent = level + '%';
-                }
+</section>
 
-                if (this.currentDirection !== null && now - this.lastUpdateTime > 100) {
-                    this.radarPoints.push({
-                        direction: this.currentDirection,
-                        level: level,
-                        timestamp: now
-                    });
-                    if (this.pointCount) {
-                        this.pointCount.textContent = this.radarPoints.length;
-                    }
-                    this.lastUpdateTime = now;
-                }
 
-                this.drawRadar();
-                this.measurementRAFId = requestAnimationFrame(() => this.measurementLoop());
-            }
+<section class="panel">
 
-            resizeCanvas() {
-                if (!this.canvas) return;
+  <h2>📋 측정 결과</h2>
 
-                const container = document.getElementById('radar-container');
-                if (!container) return;
+  <div id="results">
+    아직 측정값이 없습니다.
+  </div>
 
-                const size = Math.min(container.clientWidth, container.clientHeight) - 20;
+</section>
 
-                this.canvas.width = size;
-                this.canvas.height = size;
-                this.radius = size / 2 - 20;
-                this.centerX = size / 2;
-                this.centerY = size / 2;
-            }
 
-            drawRadar() {
-                if (!this.ctx || !this.canvas) return;
+<section class="panel">
 
-                try {
-                    this.ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
-                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  <div class="warning">
+    ⚠️ 이 실험은 실제 마이크에서 들어오는 소리의 주파수와 신호 세기를 분석합니다.
+    일반적인 아이폰 스피커/마이크만으로 벽까지의 정확한 거리를 직접 계산하는
+    초음파 거리계는 아닙니다.
+  </div>
 
-                    if (!this.radius || this.radius <= 0) return;
+  <p class="note">
+    정확한 거리 측정에는 HC-SR04 같은 거리 센서나
+    iPhone LiDAR가 필요합니다.
+  </p>
 
-                    // Grid circles
-                    this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
-                    this.ctx.lineWidth = 1;
-                    for (let i = 1; i <= 4; i++) {
-                        const r = (this.radius / 4) * i;
-                        this.ctx.beginPath();
-                        this.ctx.arc(this.centerX, this.centerY, r, 0, Math.PI * 2);
-                        this.ctx.stroke();
-                    }
+</section>
 
-                    // Cardinal directions
-                    this.ctx.fillStyle = 'rgba(0, 255, 136, 0.4)';
-                    this.ctx.font = 'bold 12px Courier New';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.textBaseline = 'middle';
+</main>
 
-                    const directions = [
-                        { label: 'N', angle: 0 },
-                        { label: 'E', angle: 90 },
-                        { label: 'S', angle: 180 },
-                        { label: 'W', angle: 270 }
-                    ];
 
-                    directions.forEach(d => {
-                        const rad = (d.angle - 90) * Math.PI / 180;
-                        const x = this.centerX + Math.cos(rad) * (this.radius + 15);
-                        const y = this.centerY + Math.sin(rad) * (this.radius + 15);
-                        this.ctx.fillText(d.label, x, y);
-                    });
+<script>
 
-                    // Axis lines
-                    this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
-                    this.ctx.lineWidth = 1;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(this.centerX, this.centerY - this.radius);
-                    this.ctx.lineTo(this.centerX, this.centerY + this.radius);
-                    this.ctx.stroke();
+let audioContext = null;
+let analyser = null;
+let microphone = null;
+let stream = null;
 
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(this.centerX - this.radius, this.centerY);
-                    this.ctx.lineTo(this.centerX + this.radius, this.centerY);
-                    this.ctx.stroke();
+let running = false;
 
-                    // Measurement points
-                    this.radarPoints.forEach(point => {
-                        const angle = (point.direction - 90) * Math.PI / 180;
-                        const distance = (point.level / 100) * this.radius;
-                        const x = this.centerX + Math.cos(angle) * distance;
-                        const y = this.centerY + Math.sin(angle) * distance;
+let currentDirection = "앞";
 
-                        const hue = point.level * 1.2;
-                        this.ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-                        this.ctx.beginPath();
-                        this.ctx.arc(x, y, 3, 0, Math.PI * 2);
-                        this.ctx.fill();
-                    });
+const results = {
+  "앞": null,
+  "뒤": null,
+  "왼쪽": null,
+  "오른쪽": null,
+  "위": null,
+  "아래": null
+};
 
-                    // Direction indicator
-                    if (this.currentDirection !== null) {
-                        const angle = (this.currentDirection - 90) * Math.PI / 180;
-                        const endX = this.centerX + Math.cos(angle) * this.radius;
-                        const endY = this.centerY + Math.sin(angle) * this.radius;
 
-                        this.ctx.strokeStyle = '#00ff88';
-                        this.ctx.lineWidth = 2;
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(this.centerX, this.centerY);
-                        this.ctx.lineTo(endX, endY);
-                        this.ctx.stroke();
+const micBtn = document.getElementById("micBtn");
+const statusEl = document.getElementById("status");
+const meterBar = document.getElementById("meterBar");
 
-                        // Arrow
-                        const arrowSize = 8;
-                        const arrowAngle1 = angle + Math.PI / 6;
-                        const arrowAngle2 = angle - Math.PI / 6;
-                        const ax1 = endX + Math.cos(arrowAngle1) * arrowSize;
-                        const ay1 = endY + Math.sin(arrowAngle1) * arrowSize;
-                        const ax2 = endX + Math.cos(arrowAngle2) * arrowSize;
-                        const ay2 = endY + Math.sin(arrowAngle2) * arrowSize;
+const freqSlider = document.getElementById("freq");
+const freqText = document.getElementById("freqText");
 
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(endX, endY);
-                        this.ctx.lineTo(ax1, ay1);
-                        this.ctx.lineTo(ax2, ay2);
-                        this.ctx.closePath();
-                        this.ctx.fillStyle = '#00ff88';
-                        this.ctx.fill();
-                    }
-                } catch (e) {
-                    console.error('Canvas drawing error:', e.message);
-                }
-            }
+const pingBtn = document.getElementById("pingBtn");
 
-            stop() {
-                this.isRunning = false;
-                if (this.measurementRAFId) {
-                    cancelAnimationFrame(this.measurementRAFId);
-                }
-                this.updateStatus('정지', 'ready');
-                this.updateButtonStates();
-            }
+const liveFreq = document.getElementById("liveFreq");
+const levelEl = document.getElementById("level");
+const reactionEl = document.getElementById("reaction");
 
-            reset() {
-                this.radarPoints = [];
-                this.simulationLevel = 0;
-                if (this.pointCount) this.pointCount.textContent = '0';
-                if (this.audioLevel) this.audioLevel.textContent = '0%';
-                if (this.directionValue) this.directionValue.textContent = '--°';
-                this.currentDirection = null;
-                this.updateButtonStates();
-                this.drawRadar();
-            }
+const canvas = document.getElementById("spectrum");
+const ctx = canvas.getContext("2d");
 
-            cleanup() {
-                this.isRunning = false;
-                if (this.measurementRAFId) {
-                    cancelAnimationFrame(this.measurementRAFId);
-                }
-            }
-        }
 
-        let sonarApp = null;
+/* 주파수 표시 */
 
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                sonarApp = new SonarRoomScanner();
-            } catch (e) {
-                console.error('Init error:', e.message);
-            }
-        });
+freqSlider.addEventListener("input", () => {
+  freqText.textContent = freqSlider.value;
+});
 
-        window.addEventListener('beforeunload', () => {
-            if (sonarApp) {
-                sonarApp.cleanup();
-            }
-        });
-    </script>
+
+/* 마이크 시작 */
+
+micBtn.addEventListener("click", async () => {
+
+  if(running){
+    stopMic();
+    return;
+  }
+
+  try{
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio:{
+        echoCancellation:false,
+        noiseSuppression:false,
+        autoGainControl:false
+      }
+    });
+
+    audioContext = new (
+      window.AudioContext ||
+      window.webkitAudioContext
+    )();
+
+    microphone =
+      audioContext.createMediaStreamSource(stream);
+
+    analyser =
+      audioContext.createAnalyser();
+
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.35;
+
+    microphone.connect(analyser);
+
+    running = true;
+
+    micBtn.textContent = "🛑 마이크 정지";
+    statusEl.textContent = "마이크 분석 중";
+
+    draw();
+
+  }catch(error){
+
+    console.error(error);
+
+    statusEl.textContent =
+      "마이크 권한을 사용할 수 없습니다.";
+
+    alert(
+      "마이크 권한이 필요합니다.\n\n" +
+      "Safari에서 HTTPS 주소로 실행하고 " +
+      "마이크 사용을 허용해주세요."
+    );
+
+  }
+
+});
+
+
+function stopMic(){
+
+  running = false;
+
+  if(stream){
+
+    stream.getTracks().forEach(
+      track => track.stop()
+    );
+
+  }
+
+  if(audioContext){
+    audioContext.close();
+  }
+
+  stream = null;
+  audioContext = null;
+  analyser = null;
+
+  micBtn.textContent = "마이크 시작";
+  statusEl.textContent = "마이크 정지";
+
+  meterBar.style.width = "0%";
+
+}
+
+
+/* 방향 선택 */
+
+document.querySelectorAll("[data-dir]").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    document.querySelectorAll("[data-dir]")
+      .forEach(b => b.classList.remove("active"));
+
+    button.classList.add("active");
+
+    currentDirection =
+      button.dataset.dir;
+
+    document.getElementById(
+      "currentDirection"
+    ).textContent =
+      "현재 방향: " + currentDirection;
+
+  });
+
+});
+
+
+/* 실시간 분석 */
+
+const buffer = new Uint8Array(2048);
+
+function draw(){
+
+  if(!running || !analyser) return;
+
+  requestAnimationFrame(draw);
+
+  analyser.getByteFrequencyData(buffer);
+
+  let sum = 0;
+
+  for(let i=0;i<buffer.length;i++){
+    sum += buffer[i];
+  }
+
+  const average =
+    sum / buffer.length;
+
+  const percent =
+    Math.min(100, average / 2.55);
+
+  meterBar.style.width =
+    percent + "%";
+
+  levelEl.textContent =
+    Math.round(percent) + "%";
+
+
+  /* 가장 강한 주파수 찾기 */
+
+  let maxValue = 0;
+  let maxIndex = 0;
+
+  for(let i=1;i<buffer.length;i++){
+
+    if(buffer[i] > maxValue){
+
+      maxValue = buffer[i];
+      maxIndex = i;
+
+    }
+
+  }
+
+  const detectedFrequency =
+    maxIndex *
+    audioContext.sampleRate /
+    analyser.fftSize;
+
+  liveFreq.textContent =
+    Math.round(detectedFrequency) + " Hz";
+
+
+  /* 테스트 주파수 주변의 반응 */
+
+  const target =
+    Number(freqSlider.value);
+
+  const bin =
+    Math.round(
+      target *
+      analyser.fftSize /
+      audioContext.sampleRate
+    );
+
+  let localStrength = 0;
+
+  for(let i=-3;i<=3;i++){
+
+    const index = bin+i;
+
+    if(index>=0 && index<buffer.length){
+
+      localStrength =
+        Math.max(
+          localStrength,
+          buffer[index]
+        );
+
+    }
+
+  }
+
+  reactionEl.textContent =
+    Math.round(
+      localStrength / 2.55
+    ) + "%";
+
+
+  /* 그래프 */
+
+  const w = canvas.width =
+    canvas.clientWidth * devicePixelRatio;
+
+  const h = canvas.height =
+    canvas.clientHeight * devicePixelRatio;
+
+  ctx.clearRect(0,0,w,h);
+
+  ctx.beginPath();
+
+  for(let i=0;i<buffer.length;i++){
+
+    const x =
+      i / buffer.length * w;
+
+    const y =
+      h -
+      (buffer[i] / 255) * h;
+
+    if(i===0)
+      ctx.moveTo(x,y);
+    else
+      ctx.lineTo(x,y);
+
+  }
+
+  ctx.strokeStyle = "#48d8ff";
+  ctx.lineWidth = 2 * devicePixelRatio;
+  ctx.stroke();
+
+}
+
+
+/* 테스트 소리 */
+
+pingBtn.addEventListener("click", async () => {
+
+  if(!audioContext){
+
+    alert(
+      "먼저 마이크 시작을 눌러주세요."
+    );
+
+    return;
+
+  }
+
+  if(audioContext.state === "suspended"){
+    await audioContext.resume();
+  }
+
+  const oscillator =
+    audioContext.createOscillator();
+
+  const gain =
+    audioContext.createGain();
+
+  const frequency =
+    Number(freqSlider.value);
+
+  oscillator.type = "sine";
+  oscillator.frequency.value =
+    frequency;
+
+  /*
+    큰 소리가 나지 않도록
+    아주 낮은 볼륨으로 테스트
+  */
+
+  gain.gain.setValueAtTime(
+    0.04,
+    audioContext.currentTime
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioContext.currentTime + 0.18
+  );
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+
+  oscillator.start();
+
+  oscillator.stop(
+    audioContext.currentTime + 0.18
+  );
+
+  statusEl.textContent =
+    currentDirection +
+    " 방향 테스트 중...";
+
+  setTimeout(() => {
+
+    measureDirection();
+
+    statusEl.textContent =
+      currentDirection +
+      " 방향 측정 완료";
+
+  },300);
+
+});
+
+
+/* 방향 측정값 기록 */
+
+function measureDirection(){
+
+  if(!analyser) return;
+
+  analyser.getByteFrequencyData(buffer);
+
+  const target =
+    Number(freqSlider.value);
+
+  const bin =
+    Math.round(
+      target *
+      analyser.fftSize /
+      audioContext.sampleRate
+    );
+
+  let strength = 0;
+
+  for(let i=-4;i<=4;i++){
+
+    const index = bin+i;
+
+    if(index>=0 && index<buffer.length){
+
+      strength =
+        Math.max(
+          strength,
+          buffer[index]
+        );
+
+    }
+
+  }
+
+  const percent =
+    Math.round(
+      strength / 255 * 100
+    );
+
+  results[currentDirection] = {
+    frequency: target,
+    strength: percent,
+    time: new Date()
+  };
+
+  updateWall(
+    currentDirection,
+    percent
+  );
+
+  updateResults();
+
+}
+
+
+/* 벽 표시 */
+
+function getWallId(direction){
+
+  const map = {
+    "앞":"front",
+    "뒤":"back",
+    "왼쪽":"left",
+    "오른쪽":"right",
+    "위":"top",
+    "아래":"bottom"
+  };
+
+  return map[direction];
+
+}
+
+
+function updateWall(direction,value){
+
+  const wall =
+    document.getElementById(
+      "wall-" + getWallId(direction)
+    );
+
+  if(!wall) return;
+
+  const small =
+    wall.querySelector("small");
+
+  small.textContent =
+    "반응 " + value + "%";
+
+  /*
+    신호가 강할수록
+    시각적으로 밝게 표시
+  */
+
+  const opacity =
+    0.25 + value / 150;
+
+  wall.style.background =
+    `rgba(49,92,255,${Math.min(
+      opacity,
+      0.9
+    )})`;
+
+}
+
+
+/* 결과 목록 */
+
+function updateResults(){
+
+  const container =
+    document.getElementById("results");
+
+  let html = "";
+
+  Object.keys(results).forEach(direction => {
+
+    const data =
+      results[direction];
+
+    if(!data){
+
+      html += `
+        <div style="
+          padding:10px;
+          border-bottom:1px solid #202638;
+          color:#69758d;
+        ">
+          ${direction} : 측정 안 됨
+        </div>
+      `;
+
+      return;
+
+    }
+
+    html += `
+      <div style="
+        padding:11px;
+        border-bottom:1px solid #202638;
+        display:flex;
+        justify-content:space-between;
+      ">
+        <strong>${direction}</strong>
+        <span>
+          ${data.frequency}Hz /
+          반응 ${data.strength}%
+        </span>
+      </div>
+    `;
+
+  });
+
+  container.innerHTML = html;
+
+}
+
+
+/* 현재 방향 결과 초기화 */
+
+document.getElementById("clearBtn")
+.addEventListener("click", () => {
+
+  Object.keys(results).forEach(
+    direction => {
+      results[direction] = null;
+    }
+  );
+
+  document.querySelectorAll(".wall")
+    .forEach(wall => {
+
+      wall.style.background =
+        "#111827";
+
+      wall.querySelector("small")
+        .textContent = "---";
+
+    });
+
+  updateResults();
+
+});
+
+
+/*
+  6방향 기록 버튼
+
+  실제로 휴대폰을 각 방향으로 돌린 뒤
+  현재 방향을 선택하고 테스트 소리를 내는 방식.
+*/
+
+document.getElementById("scanAll")
+.addEventListener("click", () => {
+
+  alert(
+    "6방향 측정 방법\n\n" +
+
+    "1. 휴대폰을 앞쪽 벽을 향하게 합니다.\n" +
+    "2. '앞'을 선택합니다.\n" +
+    "3. 테스트 소리를 냅니다.\n\n" +
+
+    "그 다음 뒤 / 왼쪽 / 오른쪽 / 위 / 아래도\n" +
+    "같은 방법으로 측정하세요.\n\n" +
+
+    "측정값이 6방향 지도에 기록됩니다."
+  );
+
+});
+
+
+updateResults();
+
+</script>
+
 </body>
 </html>
