@@ -2,40 +2,39 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1">
 
-<title>FREQUENCY WALL SCANNER</title>
+<title>REAL FREQUENCY SCANNER</title>
 
 <style>
 *{
   box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
 }
 
 body{
   margin:0;
   background:#05070b;
-  color:#fff;
+  color:white;
   font-family:Arial,sans-serif;
-  overflow-x:hidden;
 }
 
 header{
-  padding:20px 15px;
   text-align:center;
-  background:#0b1019;
-  border-bottom:1px solid #20293a;
+  padding:22px 15px;
+  background:#0b1018;
+  border-bottom:1px solid #202a3a;
 }
 
 h1{
   margin:0;
-  font-size:22px;
+  font-size:23px;
 }
 
 header p{
-  margin:7px 0 0;
-  color:#8490a6;
+  color:#7f8ba1;
   font-size:12px;
+  margin:8px 0 0;
 }
 
 main{
@@ -45,419 +44,256 @@ main{
 }
 
 .panel{
-  background:#0d131e;
-  border:1px solid #202a3c;
+  background:#0e141e;
+  border:1px solid #222c3e;
   border-radius:18px;
-  padding:16px;
+  padding:17px;
   margin-bottom:14px;
 }
 
 h2{
-  margin:0 0 13px;
+  margin:0 0 14px;
   font-size:17px;
 }
 
 button{
+  width:100%;
   border:0;
-  border-radius:12px;
-  padding:13px 16px;
+  border-radius:13px;
+  padding:14px;
   color:white;
-  background:#26334b;
-  font-size:14px;
+  background:#315cff;
+  font-size:15px;
   font-weight:bold;
 }
 
 button:active{
-  transform:scale(.97);
+  transform:scale(.98);
 }
 
-#start{
-  width:100%;
-  background:#315cff;
-}
-
-.status{
-  margin-top:10px;
-  padding:10px;
-  background:#070a10;
-  border-radius:10px;
-  text-align:center;
-  color:#91a0b8;
-}
-
-.freqNumber{
-  text-align:center;
-  font-size:30px;
-  font-weight:bold;
-  margin:8px 0 15px;
-}
-
-input[type=range]{
-  width:100%;
-}
-
-#ping{
-  width:100%;
+#status{
   margin-top:12px;
-  background:#168d69;
-}
-
-.directions{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:8px;
-}
-
-.dir{
-  min-height:65px;
-  background:#202a3b;
-}
-
-.dir.active{
-  background:#315cff;
-  box-shadow:0 0 20px #315cff55;
-}
-
-.current{
+  padding:11px;
+  border-radius:10px;
+  background:#070a10;
   text-align:center;
-  margin-top:13px;
+  color:#9aa6ba;
+}
+
+.bigFreq{
+  text-align:center;
+  font-size:48px;
+  font-weight:bold;
+  margin:10px 0 4px;
   color:#55ddff;
+}
+
+.unit{
+  text-align:center;
+  color:#77849a;
+  margin-bottom:18px;
 }
 
 .stats{
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:8px;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
 }
 
 .stat{
-  padding:12px 5px;
-  text-align:center;
   background:#070a10;
   border-radius:12px;
+  padding:14px;
+  text-align:center;
 }
 
 .stat span{
   display:block;
-  color:#77849b;
+  color:#78849a;
   font-size:11px;
-  margin-bottom:6px;
+  margin-bottom:7px;
 }
 
 .stat strong{
-  font-size:16px;
+  font-size:17px;
 }
 
 canvas{
   display:block;
   width:100%;
-  height:190px;
-  margin-top:12px;
+  height:230px;
   background:#05070b;
-  border-radius:12px;
+  border-radius:13px;
 }
 
-.map{
-  position:relative;
-  width:min(90vw,450px);
-  height:min(90vw,450px);
-  margin:15px auto;
-  border:1px solid #29354a;
+.meter{
+  height:15px;
+  margin-top:14px;
   background:#070a10;
+  border-radius:20px;
+  overflow:hidden;
 }
 
-.wall{
-  position:absolute;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  border:2px solid #26344a;
-  color:#8794aa;
-  font-size:13px;
-  transition:.2s;
+#meterBar{
+  height:100%;
+  width:0%;
+  background:#55ddff;
+  transition:.08s;
 }
 
-.wall span{
-  font-size:11px;
-  margin-top:5px;
-  color:#55ddff;
+.target{
+  margin-top:18px;
 }
 
-.front{
-  left:25%;
-  top:5%;
-  width:50%;
-  height:18%;
+.targetValue{
+  text-align:center;
+  font-size:25px;
+  font-weight:bold;
+  margin:8px;
 }
 
-.back{
-  left:25%;
-  bottom:5%;
-  width:50%;
-  height:18%;
-}
-
-.left{
-  left:5%;
-  top:25%;
-  width:18%;
-  height:50%;
-}
-
-.right{
-  right:5%;
-  top:25%;
-  width:18%;
-  height:50%;
-}
-
-.top{
-  left:25%;
-  top:25%;
-  width:50%;
-  height:18%;
-}
-
-.bottom{
-  left:25%;
-  bottom:25%;
-  width:50%;
-  height:18%;
-}
-
-.phone{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:48px;
-  height:48px;
-  border-radius:50%;
-  background:#315cff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 0 25px #315cff88;
-}
-
-.results div{
-  display:flex;
-  justify-content:space-between;
-  padding:10px;
-  border-bottom:1px solid #1d2636;
-}
-
-.results span{
-  color:#55ddff;
+input{
+  width:100%;
 }
 
 .note{
-  color:#77849a;
+  color:#7c889c;
   font-size:12px;
   line-height:1.6;
 }
 
 .warning{
   background:#211d0d;
-  color:#d5c37e;
-  padding:12px;
+  color:#d5c47f;
   border-radius:12px;
+  padding:12px;
   font-size:12px;
   line-height:1.6;
 }
 </style>
 </head>
 
-
 <body>
 
 <header>
-  <h1>📡 FREQUENCY WALL SCANNER</h1>
-  <p>실제 마이크 주파수 감지 · 6방향 반응 분석</p>
+  <h1>🎧 REAL FREQUENCY SCANNER</h1>
+  <p>휴대폰 마이크 실시간 주파수 측정</p>
 </header>
-
 
 <main>
 
+<section class="panel">
 
-<div class="panel">
-
-  <h2>🎙 실제 마이크</h2>
+  <h2>🎙 마이크</h2>
 
   <button id="start">
     마이크 시작
   </button>
 
-  <div class="status" id="status">
-    대기 중
+  <div id="status">
+    마이크 대기 중
   </div>
 
-</div>
+</section>
 
 
-<div class="panel">
+<section class="panel">
 
-  <h2>🔊 테스트 주파수</h2>
+  <h2>📡 현재 감지 주파수</h2>
 
-  <div class="freqNumber">
-    <span id="freqText">880</span> Hz
+  <div class="bigFreq">
+    <span id="frequency">---</span>
   </div>
 
-  <input
-    id="freq"
-    type="range"
-    min="300"
-    max="5000"
-    value="880"
-    step="10"
-  >
-
-  <button id="ping">
-    🔊 짧은 테스트음 발생
-  </button>
-
-</div>
-
-
-<div class="panel">
-
-  <h2>🧭 벽 방향</h2>
-
-  <div class="directions">
-
-    <button class="dir active" data-dir="front">
-      ⬆️<br>앞
-    </button>
-
-    <button class="dir" data-dir="back">
-      ⬇️<br>뒤
-    </button>
-
-    <button class="dir" data-dir="left">
-      ⬅️<br>왼쪽
-    </button>
-
-    <button class="dir" data-dir="right">
-      ➡️<br>오른쪽
-    </button>
-
-    <button class="dir" data-dir="top">
-      🔼<br>위
-    </button>
-
-    <button class="dir" data-dir="bottom">
-      🔽<br>아래
-    </button>
-
+  <div class="unit">
+    Hz
   </div>
-
-  <div class="current" id="current">
-    현재 방향: 앞
-  </div>
-
-</div>
-
-
-<div class="panel">
-
-  <h2>📊 실제 마이크 분석</h2>
 
   <div class="stats">
 
     <div class="stat">
-      <span>감지 주파수</span>
-      <strong id="detected">---</strong>
+      <span>신호 세기</span>
+      <strong id="level">---</strong>
     </div>
 
     <div class="stat">
-      <span>전체 신호</span>
-      <strong id="volume">---</strong>
+      <span>샘플레이트</span>
+      <strong id="sampleRate">---</strong>
     </div>
+
+  </div>
+
+  <div class="meter">
+    <div id="meterBar"></div>
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>📊 주파수 스펙트럼</h2>
+
+  <canvas id="spectrum"></canvas>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>🎯 특정 주파수 확인</h2>
+
+  <div class="targetValue">
+    <span id="targetText">1000</span> Hz
+  </div>
+
+  <input
+    id="target"
+    type="range"
+    min="50"
+    max="10000"
+    step="10"
+    value="1000"
+  >
+
+  <div class="stats" style="margin-top:15px">
 
     <div class="stat">
       <span>목표 주파수</span>
-      <strong id="targetLevel">---</strong>
+      <strong id="targetHz">1000 Hz</strong>
+    </div>
+
+    <div class="stat">
+      <span>해당 주파수 세기</span>
+      <strong id="targetLevel">0%</strong>
     </div>
 
   </div>
 
-  <canvas id="graph"></canvas>
-
-</div>
+</section>
 
 
-<div class="panel">
+<section class="panel">
 
-  <h2>🗺 6방향 반응 지도</h2>
+  <h2>📈 측정 정보</h2>
 
-  <div class="map">
-
-    <div class="wall front" id="wall-front">
-      앞
-      <span>---</span>
-    </div>
-
-    <div class="wall back" id="wall-back">
-      뒤
-      <span>---</span>
-    </div>
-
-    <div class="wall left" id="wall-left">
-      왼쪽
-      <span>---</span>
-    </div>
-
-    <div class="wall right" id="wall-right">
-      오른쪽
-      <span>---</span>
-    </div>
-
-    <div class="wall top" id="wall-top">
-      위
-      <span>---</span>
-    </div>
-
-    <div class="wall bottom" id="wall-bottom">
-      아래
-      <span>---</span>
-    </div>
-
-    <div class="phone">
-      📱
-    </div>
-
+  <div id="info" class="note">
+    마이크를 시작하면 실제 주변 소리를 분석합니다.
   </div>
 
-</div>
+</section>
 
 
-<div class="panel">
-
-  <h2>📋 측정 기록</h2>
-
-  <div class="results" id="results">
-  </div>
-
-</div>
-
-
-<div class="panel">
+<section class="panel">
 
   <div class="warning">
-    ⚠️ 중요: 이 버전은 실제 마이크에서 측정한 주파수와 신호 세기를
-    사용합니다. 일반 아이폰 스피커와 마이크만으로 벽까지의 정확한
-    거리를 cm 단위로 계산할 수 있다고 가정하지 않습니다.
-    반사음의 변화와 방향별 신호를 실험하는 용도입니다.
+    ⚠️ 이 페이지는 휴대폰 마이크에서 들어오는 실제 소리를
+    FFT로 분석합니다. 표시되는 주파수는 주변 소리의
+    가장 강한 주파수이며, 이것만으로 벽까지의 거리를
+    정확하게 측정하는 기능은 아닙니다.
   </div>
 
-  <p class="note">
-    마이크 권한은 HTTPS 환경에서 실행해야 합니다.
-    GitHub Pages 같은 HTTPS 사이트에서 실행하는 것이 좋습니다.
-  </p>
-
-</div>
-
+</section>
 
 </main>
 
@@ -471,74 +307,58 @@ let stream = null;
 
 let running = false;
 
-let selectedDirection = "front";
 
-const data = {
-
-  front:null,
-  back:null,
-  left:null,
-  right:null,
-  top:null,
-  bottom:null
-
-};
-
-
-const names = {
-
-  front:"앞",
-  back:"뒤",
-  left:"왼쪽",
-  right:"오른쪽",
-  top:"위",
-  bottom:"아래"
-
-};
-
-
-const startBtn =
+const start =
   document.getElementById("start");
 
 const status =
   document.getElementById("status");
 
-const freq =
-  document.getElementById("freq");
+const frequency =
+  document.getElementById("frequency");
 
-const freqText =
-  document.getElementById("freqText");
+const level =
+  document.getElementById("level");
 
-const ping =
-  document.getElementById("ping");
+const sampleRate =
+  document.getElementById("sampleRate");
 
-const detected =
-  document.getElementById("detected");
+const meterBar =
+  document.getElementById("meterBar");
 
-const volume =
-  document.getElementById("volume");
+const target =
+  document.getElementById("target");
+
+const targetText =
+  document.getElementById("targetText");
+
+const targetHz =
+  document.getElementById("targetHz");
 
 const targetLevel =
   document.getElementById("targetLevel");
 
-const current =
-  document.getElementById("current");
+const info =
+  document.getElementById("info");
 
 const canvas =
-  document.getElementById("graph");
+  document.getElementById("spectrum");
 
 const ctx =
   canvas.getContext("2d");
 
 
-/* 주파수 슬라이더 */
+/* 목표 주파수 */
 
-freq.addEventListener(
+target.addEventListener(
   "input",
   () => {
 
-    freqText.textContent =
-      freq.value;
+    targetText.textContent =
+      target.value;
+
+    targetHz.textContent =
+      target.value + " Hz";
 
   }
 );
@@ -546,32 +366,31 @@ freq.addEventListener(
 
 /* 마이크 시작 */
 
-startBtn.addEventListener(
+start.addEventListener(
   "click",
   async () => {
 
     if(running){
 
-      stopMicrophone();
-
-      return;
-
-    }
-
-    if(
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ){
-
-      alert(
-        "이 브라우저에서 마이크를 사용할 수 없습니다."
-      );
+      stop();
 
       return;
 
     }
 
     try{
+
+      if(
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ){
+
+        throw new Error(
+          "getUserMedia 지원 안 됨"
+        );
+
+      }
+
 
       stream =
         await navigator.mediaDevices.getUserMedia({
@@ -585,11 +404,13 @@ startBtn.addEventListener(
         });
 
 
+      const AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+
       audioContext =
-        new (
-          window.AudioContext ||
-          window.webkitAudioContext
-        )();
+        new AudioContext();
 
 
       microphone =
@@ -602,10 +423,18 @@ startBtn.addEventListener(
         audioContext.createAnalyser();
 
 
-      analyser.fftSize = 4096;
+      /*
+        FFT 크기.
+        4096이면 주파수 해상도가
+        2048보다 좋아짐.
+      */
+
+      analyser.fftSize =
+        4096;
+
 
       analyser.smoothingTimeConstant =
-        0.15;
+        0.2;
 
 
       microphone.connect(
@@ -615,11 +444,22 @@ startBtn.addEventListener(
 
       running = true;
 
-      startBtn.textContent =
+
+      start.textContent =
         "🛑 마이크 정지";
 
+
       status.textContent =
-        "🟢 실제 마이크 분석 중";
+        "🟢 실시간 주파수 측정 중";
+
+
+      sampleRate.textContent =
+        audioContext.sampleRate +
+        " Hz";
+
+
+      info.textContent =
+        "주변에서 들리는 실제 소리를 분석하고 있습니다.";
 
 
       analyze();
@@ -631,11 +471,12 @@ startBtn.addEventListener(
       console.error(error);
 
       status.textContent =
-        "❌ 마이크 권한 실패";
+        "❌ 마이크를 시작할 수 없음";
 
       alert(
-        "마이크 권한을 허용해주세요.\n\n" +
-        "그리고 반드시 HTTPS 주소에서 실행하세요."
+        "마이크 권한이 필요합니다.\n\n" +
+        "HTTPS 사이트에서 실행하고 " +
+        "마이크 사용을 허용해주세요."
       );
 
     }
@@ -644,9 +485,12 @@ startBtn.addEventListener(
 );
 
 
-function stopMicrophone(){
+/* 정지 */
+
+function stop(){
 
   running = false;
+
 
   if(stream){
 
@@ -658,55 +502,39 @@ function stopMicrophone(){
 
   }
 
+
   if(audioContext){
 
     audioContext.close();
 
   }
 
+
   stream = null;
   audioContext = null;
   analyser = null;
 
-  startBtn.textContent =
+
+  start.textContent =
     "마이크 시작";
+
 
   status.textContent =
     "마이크 정지";
 
+
+  frequency.textContent =
+    "---";
+
+
+  level.textContent =
+    "---";
+
+
+  meterBar.style.width =
+    "0%";
+
 }
-
-
-/* 방향 선택 */
-
-document
-.querySelectorAll(".dir")
-.forEach(button => {
-
-  button.addEventListener(
-    "click",
-    () => {
-
-      document
-      .querySelectorAll(".dir")
-      .forEach(
-        b =>
-          b.classList.remove("active")
-      );
-
-      button.classList.add("active");
-
-      selectedDirection =
-        button.dataset.dir;
-
-      current.textContent =
-        "현재 방향: " +
-        names[selectedDirection];
-
-    }
-  );
-
-});
 
 
 /* 실제 FFT 분석 */
@@ -728,57 +556,35 @@ function analyze(){
   );
 
 
-  const array =
+  const data =
     new Uint8Array(
       analyser.frequencyBinCount
     );
 
 
   analyser.getByteFrequencyData(
-    array
+    data
   );
 
 
-  /* 전체 신호 */
+  /* 가장 강한 주파수 */
 
-  let sum = 0;
-
-  for(
-    let i=0;
-    i<array.length;
-    i++
-  ){
-
-    sum += array[i];
-
-  }
-
-
-  const average =
-    sum / array.length;
-
-
-  volume.textContent =
-    Math.round(
-      average / 255 * 100
-    ) + "%";
-
-
-  /* 가장 강한 실제 주파수 */
-
-  let max = 0;
+  let maxValue = 0;
   let maxIndex = 0;
+
 
   for(
     let i=1;
-    i<array.length;
+    i<data.length;
     i++
   ){
 
-    if(array[i] > max){
+    if(
+      data[i] > maxValue
+    ){
 
-      max =
-        array[i];
+      maxValue =
+        data[i];
 
       maxIndex =
         i;
@@ -788,33 +594,70 @@ function analyze(){
   }
 
 
-  const realFrequency =
+  const detectedFrequency =
     maxIndex *
     audioContext.sampleRate /
     analyser.fftSize;
 
 
-  detected.textContent =
+  frequency.textContent =
     Math.round(
-      realFrequency
-    ) + " Hz";
+      detectedFrequency
+    );
 
 
-  /* 목표 주파수 */
+  /* 전체 평균 세기 */
 
-  const target =
-    Number(freq.value);
+  let sum = 0;
 
 
-  const targetIndex =
+  for(
+    let i=0;
+    i<data.length;
+    i++
+  ){
+
+    sum += data[i];
+
+  }
+
+
+  const average =
+    sum / data.length;
+
+
+  const percent =
+    Math.min(
+      100,
+      Math.round(
+        average / 255 * 100
+      )
+    );
+
+
+  level.textContent =
+    percent + "%";
+
+
+  meterBar.style.width =
+    percent + "%";
+
+
+  /* 목표 주파수 세기 */
+
+  const wanted =
+    Number(target.value);
+
+
+  const wantedIndex =
     Math.round(
-      target *
+      wanted *
       analyser.fftSize /
       audioContext.sampleRate
     );
 
 
-  let targetStrength = 0;
+  let wantedStrength = 0;
 
 
   for(
@@ -824,18 +667,18 @@ function analyze(){
   ){
 
     const index =
-      targetIndex + i;
+      wantedIndex + i;
 
 
     if(
       index >= 0 &&
-      index < array.length
+      index < data.length
     ){
 
-      targetStrength =
+      wantedStrength =
         Math.max(
-          targetStrength,
-          array[index]
+          wantedStrength,
+          data[index]
         );
 
     }
@@ -843,32 +686,21 @@ function analyze(){
   }
 
 
-  const targetPercent =
-    Math.round(
-      targetStrength /
-      255 *
-      100
-    );
-
-
   targetLevel.textContent =
-    targetPercent + "%";
+    Math.round(
+      wantedStrength /
+      255 * 100
+    ) + "%";
 
 
-  drawSpectrum(
-    array,
-    targetIndex
-  );
+  draw(data);
 
 }
 
 
 /* 그래프 */
 
-function drawSpectrum(
-  array,
-  targetIndex
-){
+function draw(data){
 
   const width =
     canvas.clientWidth;
@@ -882,15 +714,15 @@ function drawSpectrum(
 
 
   if(
-    canvas.width !==
-    width * dpr
+    canvas.width !== width*dpr ||
+    canvas.height !== height*dpr
   ){
 
     canvas.width =
-      width * dpr;
+      width*dpr;
 
     canvas.height =
-      height * dpr;
+      height*dpr;
 
   }
 
@@ -913,31 +745,34 @@ function drawSpectrum(
   );
 
 
-  ctx.beginPath();
+  /*
+    너무 높은 영역은 화면에서 줄여서
+    보기 편하게 표시
+  */
 
-
-  const maxBars =
+  const count =
     Math.min(
-      array.length,
-      220
+      data.length,
+      500
     );
+
+
+  ctx.beginPath();
 
 
   for(
     let i=0;
-    i<maxBars;
+    i<count;
     i++
   ){
 
     const x =
-      i /
-      maxBars *
-      width;
+      i / count * width;
 
 
     const y =
       height -
-      array[i] /
+      data[i] /
       255 *
       height;
 
@@ -949,7 +784,8 @@ function drawSpectrum(
         y
       );
 
-    }else{
+    }
+    else{
 
       ctx.lineTo(
         x,
@@ -964,333 +800,54 @@ function drawSpectrum(
   ctx.strokeStyle =
     "#55ddff";
 
-  ctx.lineWidth = 2;
+  ctx.lineWidth =
+    2;
 
   ctx.stroke();
 
 
-  /* 목표 주파수 표시 */
+  /* 가운데 기준선 */
 
-  const x =
-    targetIndex /
-    array.length *
-    width;
+  ctx.strokeStyle =
+    "#202a3a";
 
+  ctx.lineWidth =
+    1;
 
   ctx.beginPath();
 
   ctx.moveTo(
-    x,
-    0
+    0,
+    height/2
   );
 
   ctx.lineTo(
-    x,
-    height
+    width,
+    height/2
   );
-
-  ctx.strokeStyle =
-    "#ffcc55";
-
-  ctx.lineWidth = 1;
 
   ctx.stroke();
 
 }
 
 
-/* 테스트 소리 */
+/* 화면 크기 변경 */
 
-ping.addEventListener(
-  "click",
-  async () => {
+window.addEventListener(
+  "resize",
+  () => {
 
-    if(!audioContext){
+    if(running){
 
-      alert(
-        "먼저 마이크를 시작해주세요."
-      );
-
-      return;
-
-    }
-
-
-    if(
-      audioContext.state ===
-      "suspended"
-    ){
-
-      await audioContext.resume();
+      /*
+        다음 분석 프레임에서
+        캔버스 크기가 자동 갱신됨
+      */
 
     }
-
-
-    const oscillator =
-      audioContext.createOscillator();
-
-
-    const gain =
-      audioContext.createGain();
-
-
-    const hz =
-      Number(freq.value);
-
-
-    oscillator.type =
-      "sine";
-
-
-    oscillator.frequency.value =
-      hz;
-
-
-    /*
-      안전한 낮은 볼륨
-    */
-
-    gain.gain.setValueAtTime(
-      0.03,
-      audioContext.currentTime
-    );
-
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      audioContext.currentTime + 0.15
-    );
-
-
-    oscillator.connect(
-      gain
-    );
-
-
-    gain.connect(
-      audioContext.destination
-    );
-
-
-    oscillator.start();
-
-
-    oscillator.stop(
-      audioContext.currentTime + 0.15
-    );
-
-
-    status.textContent =
-      names[selectedDirection] +
-      " 방향 " +
-      hz +
-      "Hz 테스트 중";
-
-
-    /*
-      소리가 끝난 직후
-      목표 주파수의 현재 반응을 기록
-    */
-
-    setTimeout(
-      recordMeasurement,
-      250
-    );
 
   }
 );
-
-
-/* 측정 기록 */
-
-function recordMeasurement(){
-
-  if(!analyser)
-    return;
-
-
-  const array =
-    new Uint8Array(
-      analyser.frequencyBinCount
-    );
-
-
-  analyser.getByteFrequencyData(
-    array
-  );
-
-
-  const hz =
-    Number(freq.value);
-
-
-  const index =
-    Math.round(
-      hz *
-      analyser.fftSize /
-      audioContext.sampleRate
-    );
-
-
-  let strength = 0;
-
-
-  for(
-    let i=-5;
-    i<=5;
-    i++
-  ){
-
-    const n =
-      index + i;
-
-
-    if(
-      n >= 0 &&
-      n < array.length
-    ){
-
-      strength =
-        Math.max(
-          strength,
-          array[n]
-        );
-
-    }
-
-  }
-
-
-  const percent =
-    Math.round(
-      strength /
-      255 *
-      100
-    );
-
-
-  data[selectedDirection] = {
-
-    frequency:hz,
-
-    strength:percent,
-
-    time:
-      new Date()
-      .toLocaleTimeString()
-
-  };
-
-
-  updateWall(
-    selectedDirection,
-    percent
-  );
-
-
-  updateResults();
-
-}
-
-
-/* 벽 표시 */
-
-function updateWall(
-  direction,
-  strength
-){
-
-  const wall =
-    document.getElementById(
-      "wall-" + direction
-    );
-
-
-  const span =
-    wall.querySelector(
-      "span"
-    );
-
-
-  span.textContent =
-    strength + "%";
-
-
-  /*
-    반응이 강할수록
-    벽을 밝게 표시
-  */
-
-  const alpha =
-    0.15 +
-    strength / 120;
-
-
-  wall.style.background =
-    `rgba(
-      49,
-      92,
-      255,
-      ${Math.min(alpha,0.9)}
-    )`;
-
-}
-
-
-/* 결과 목록 */
-
-function updateResults(){
-
-  const box =
-    document.getElementById(
-      "results"
-    );
-
-
-  let html = "";
-
-
-  Object.keys(data)
-  .forEach(direction => {
-
-    const item =
-      data[direction];
-
-
-    if(!item){
-
-      html += `
-        <div>
-          <b>${names[direction]}</b>
-          <span>측정 안 됨</span>
-        </div>
-      `;
-
-      return;
-
-    }
-
-
-    html += `
-      <div>
-        <b>${names[direction]}</b>
-        <span>
-          ${item.frequency}Hz /
-          ${item.strength}%
-        </span>
-      </div>
-    `;
-
-  });
-
-
-  box.innerHTML =
-    html;
-
-}
-
-
-updateResults();
 
 </script>
 
