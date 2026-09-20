@@ -3,38 +3,955 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport"
-      content="width=device-width,initial-scale=1,maximum-scale=1">
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<title>REAL FREQUENCY SCANNER</title>
+<title>FREQUENCY DEPTH SCANNER</title>
 
 <style>
 *{
   box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
 }
 
-body{
+html,body{
   margin:0;
-  background:#05070b;
-  color:white;
-  font-family:Arial,sans-serif;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#05070a;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+#app{
+  height:100%;
+  display:flex;
+  flex-direction:column;
 }
 
 header{
-  text-align:center;
-  padding:22px 15px;
-  background:#0b1018;
-  border-bottom:1px solid #202a3a;
+  height:64px;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 12px;
+  background:#10131a;
+  border-bottom:1px solid #272c36;
 }
 
-h1{
-  margin:0;
+.title{
+  font-size:17px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+button{
+  border:1px solid #343a47;
+  background:#191d26;
+  color:white;
+  border-radius:10px;
+  padding:10px 13px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.96);
+}
+
+button.active{
+  background:#27364b;
+  border-color:#587ba5;
+}
+
+#main{
+  flex:1;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+#top{
+  flex:1;
+  min-height:0;
+  position:relative;
+}
+
+canvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+#start{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(5,7,10,.88);
+  z-index:5;
+}
+
+.startBox{
+  width:min(420px,90%);
+  padding:25px;
+  border:1px solid #303744;
+  border-radius:18px;
+  background:#11151d;
+  text-align:center;
+}
+
+.startBox h2{
+  margin:0 0 10px;
   font-size:23px;
 }
 
-header p{
-  color:#7f8ba1;
+.startBox p{
+  color:#9ca4b3;
+  font-size:13px;
+  line-height:1.6;
+}
+
+#startButton{
+  margin-top:12px;
+  width:100%;
+  padding:14px;
+  font-size:15px;
+  font-weight:700;
+}
+
+#status{
+  position:absolute;
+  top:12px;
+  left:12px;
+  padding:9px 12px;
+  border-radius:11px;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(8px);
   font-size:12px;
-  margin:8px 0 0;
+}
+
+#stats{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:190px;
+  padding:12px;
+  border-radius:13px;
+  background:rgba(0,0,0,.62);
+  backdrop-filter:blur(8px);
+  font-size:12px;
+  line-height:1.8;
+}
+
+.value{
+  color:#72d7ff;
+  font-weight:700;
+}
+
+#bottom{
+  height:190px;
+  flex-shrink:0;
+  border-top:1px solid #272c36;
+  background:#0d1016;
+  padding:10px;
+}
+
+#spectrum{
+  width:100%;
+  height:100%;
+}
+
+#hint{
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  transform:translateX(-50%);
+  color:#727b8b;
+  font-size:11px;
+  white-space:nowrap;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<header>
+  <div class="title">FREQUENCY DEPTH</div>
+  <button id="scanButton">스캔 시작</button>
+  <button id="clearButton">초기화</button>
+</header>
+
+<div id="main">
+
+  <div id="top">
+
+    <canvas id="depthMap"></canvas>
+
+    <div id="status">
+      ● 대기 중
+    </div>
+
+    <div id="stats">
+      주파수:
+      <span class="value" id="freq">--</span> Hz<br>
+
+      반응:
+      <span class="value" id="level">--</span> %<br>
+
+      샘플링:
+      <span class="value" id="sample">--</span> Hz<br>
+
+      누적:
+      <span class="value" id="count">0</span>
+    </div>
+
+    <div id="hint">
+      마이크에 들어오는 실제 소리를 분석합니다
+    </div>
+
+    <div id="start">
+
+      <div class="startBox">
+
+        <h2>🎙 주파수 깊이 스캐너</h2>
+
+        <p>
+          실제 마이크 소리를 분석하여<br>
+          주파수별 반응 강도를 한 면의<br>
+          깊이맵 형태로 시각화합니다.
+        </p>
+
+        <button id="startButton">
+          마이크 시작
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="bottom">
+    <canvas id="spectrum"></canvas>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+
+/* ==========================================
+   기본 설정
+========================================== */
+
+const depthCanvas =
+  document.getElementById("depthMap");
+
+const depthCtx =
+  depthCanvas.getContext("2d");
+
+const spectrumCanvas =
+  document.getElementById("spectrum");
+
+const spectrumCtx =
+  spectrumCanvas.getContext("2d");
+
+const startScreen =
+  document.getElementById("start");
+
+const startButton =
+  document.getElementById("startButton");
+
+const scanButton =
+  document.getElementById("scanButton");
+
+const clearButton =
+  document.getElementById("clearButton");
+
+const statusEl =
+  document.getElementById("status");
+
+const freqEl =
+  document.getElementById("freq");
+
+const levelEl =
+  document.getElementById("level");
+
+const sampleEl =
+  document.getElementById("sample");
+
+const countEl =
+  document.getElementById("count");
+
+
+/* ==========================================
+   오디오 변수
+========================================== */
+
+let audioContext = null;
+let analyser = null;
+let stream = null;
+let source = null;
+
+let frequencyData = null;
+
+let running = false;
+let animationId = null;
+
+let sampleRate = 0;
+
+
+/* ==========================================
+   깊이맵 데이터
+
+   여러 번 측정한 주파수 반응을
+   하나의 면으로 누적한다.
+========================================== */
+
+const MAP_W = 80;
+const MAP_H = 50;
+
+let depthData =
+  new Float32Array(MAP_W * MAP_H);
+
+let measurementCount = 0;
+
+
+/* ==========================================
+   화면 크기
+========================================== */
+
+function resize(){
+
+  const dpr =
+    Math.min(window.devicePixelRatio || 1,2);
+
+  const r =
+    depthCanvas.getBoundingClientRect();
+
+  depthCanvas.width =
+    Math.floor(r.width*dpr);
+
+  depthCanvas.height =
+    Math.floor(r.height*dpr);
+
+  depthCtx.setTransform(
+    dpr,0,0,dpr,0,0
+  );
+
+  const sr =
+    spectrumCanvas.getBoundingClientRect();
+
+  spectrumCanvas.width =
+    Math.floor(sr.width*dpr);
+
+  spectrumCanvas.height =
+    Math.floor(sr.height*dpr);
+
+  spectrumCtx.setTransform(
+    dpr,0,0,dpr,0,0
+  );
+
+  drawDepthMap();
+}
+
+window.addEventListener("resize",resize);
+
+
+/* ==========================================
+   마이크 시작
+========================================== */
+
+async function startMicrophone(){
+
+  try{
+
+    if(!window.isSecureContext){
+
+      alert(
+        "마이크 사용은 HTTPS에서 실행해야 합니다."
+      );
+
+      return;
+    }
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        audio:{
+          echoCancellation:false,
+          noiseSuppression:false,
+          autoGainControl:false
+        }
+      });
+
+    audioContext =
+      new (
+        window.AudioContext ||
+        window.webkitAudioContext
+      )();
+
+    await audioContext.resume();
+
+    analyser =
+      audioContext.createAnalyser();
+
+    analyser.fftSize=4096;
+
+    analyser.smoothingTimeConstant=.18;
+
+    source =
+      audioContext.createMediaStreamSource(stream);
+
+    source.connect(analyser);
+
+    frequencyData =
+      new Uint8Array(
+        analyser.frequencyBinCount
+      );
+
+    sampleRate =
+      audioContext.sampleRate;
+
+    sampleEl.textContent =
+      sampleRate;
+
+    startScreen.style.display="none";
+
+    running=true;
+
+    scanButton.classList.add("active");
+
+    statusEl.textContent =
+      "● 측정 중";
+
+    animationId =
+      requestAnimationFrame(loop);
+
+  }catch(err){
+
+    console.error(err);
+
+    alert(
+      "마이크를 사용할 수 없습니다.\n\n"+
+      err.message
+    );
+  }
+}
+
+
+/* ==========================================
+   주파수 분석
+========================================== */
+
+function analyse(){
+
+  if(!analyser) return null;
+
+  analyser.getByteFrequencyData(
+    frequencyData
+  );
+
+  let maxValue=0;
+  let maxIndex=0;
+
+  let total=0;
+
+  for(let i=0;i<frequencyData.length;i++){
+
+    const v=frequencyData[i];
+
+    total+=v;
+
+    if(v>maxValue){
+
+      maxValue=v;
+      maxIndex=i;
+    }
+  }
+
+  const frequency =
+    maxIndex *
+    sampleRate /
+    analyser.fftSize;
+
+  const average =
+    total /
+    frequencyData.length;
+
+  return {
+    frequency,
+    peak:maxValue,
+    average
+  };
+}
+
+
+/* ==========================================
+   주파수 → 깊이값
+========================================== */
+
+function updateDepth(result){
+
+  if(!result) return;
+
+  const f=result.frequency;
+
+  const strength =
+    result.peak/255;
+
+  /*
+    실제 공간 좌표를 측정하는 것이 아니라
+    주파수 반응을 가상의 깊이값으로 변환.
+  */
+
+  const normalizedFreq =
+    Math.min(
+      1,
+      Math.max(
+        0,
+        Math.log10(
+          Math.max(20,f)
+        ) /
+        Math.log10(20000)
+      )
+    );
+
+  /*
+    주파수 위치
+  */
+
+  const x =
+    Math.floor(
+      normalizedFreq*(MAP_W-1)
+    );
+
+  /*
+    반응 강도가 강할수록
+    중앙에서 크게 나타나도록 함.
+  */
+
+  const centerY =
+    Math.floor(MAP_H/2);
+
+  const spread =
+    Math.max(
+      1,
+      Math.floor(
+        strength*MAP_H*.45
+      )
+    );
+
+  for(
+    let y=centerY-spread;
+    y<=centerY+spread;
+    y++
+  ){
+
+    if(y<0 || y>=MAP_H) continue;
+
+    const distance =
+      Math.abs(y-centerY)/
+      Math.max(1,spread);
+
+    const value =
+      strength*
+      (1-distance);
+
+    const index =
+      y*MAP_W+x;
+
+    /*
+      누적하면서 천천히 평균화
+    */
+
+    depthData[index] =
+      depthData[index]*.94+
+      value*.06;
+  }
+
+  /*
+    주변으로 아주 조금 퍼뜨려서
+    깊이맵처럼 보이게 함.
+  */
+
+  if(x>0){
+
+    depthData[
+      centerY*MAP_W+x-1
+    ] += strength*.015;
+  }
+
+  if(x<MAP_W-1){
+
+    depthData[
+      centerY*MAP_W+x+1
+    ] += strength*.015;
+  }
+
+  measurementCount++;
+
+  countEl.textContent =
+    measurementCount;
+}
+
+
+/* ==========================================
+   깊이맵 렌더링
+========================================== */
+
+function drawDepthMap(){
+
+  const rect =
+    depthCanvas.getBoundingClientRect();
+
+  const W=rect.width;
+  const H=rect.height;
+
+  depthCtx.clearRect(
+    0,0,W,H
+  );
+
+  /*
+    배경
+  */
+
+  depthCtx.fillStyle="#05070a";
+
+  depthCtx.fillRect(
+    0,0,W,H
+  );
+
+  const cellW=W/MAP_W;
+  const cellH=H/MAP_H;
+
+  /*
+    깊이맵
+  */
+
+  for(let y=0;y<MAP_H;y++){
+
+    for(let x=0;x<MAP_W;x++){
+
+      let v =
+        depthData[y*MAP_W+x];
+
+      v=Math.max(
+        0,
+        Math.min(1,v*4)
+      );
+
+      /*
+        검정 → 파랑 → 청록 → 흰색
+      */
+
+      let r=0;
+      let g=0;
+      let b=0;
+
+      if(v<.33){
+
+        const t=v/.33;
+
+        b=30+180*t;
+        g=15+80*t;
+
+      }else if(v<.66){
+
+        const t=(v-.33)/.33;
+
+        b=210;
+        g=95+140*t;
+        r=10+20*t;
+
+      }else{
+
+        const t=(v-.66)/.34;
+
+        r=30+225*t;
+        g=235;
+        b=255;
+      }
+
+      depthCtx.fillStyle=
+        `rgb(${r|0},${g|0},${b|0})`;
+
+      depthCtx.fillRect(
+        x*cellW,
+        y*cellH,
+        cellW+1,
+        cellH+1
+      );
+    }
+  }
+
+  /*
+    격자
+  */
+
+  depthCtx.strokeStyle=
+    "rgba(255,255,255,.07)";
+
+  depthCtx.lineWidth=1;
+
+  for(let x=0;x<=MAP_W;x+=5){
+
+    const px=x*cellW;
+
+    depthCtx.beginPath();
+
+    depthCtx.moveTo(px,0);
+    depthCtx.lineTo(px,H);
+
+    depthCtx.stroke();
+  }
+
+  for(let y=0;y<=MAP_H;y+=5){
+
+    const py=y*cellH;
+
+    depthCtx.beginPath();
+
+    depthCtx.moveTo(0,py);
+    depthCtx.lineTo(W,py);
+
+    depthCtx.stroke();
+  }
+
+  /*
+    중앙선
+  */
+
+  depthCtx.strokeStyle=
+    "rgba(255,255,255,.25)";
+
+  depthCtx.beginPath();
+
+  depthCtx.moveTo(
+    W/2,0
+  );
+
+  depthCtx.lineTo(
+    W/2,H
+  );
+
+  depthCtx.stroke();
+}
+
+
+/* ==========================================
+   스펙트럼
+========================================== */
+
+function drawSpectrum(){
+
+  const rect =
+    spectrumCanvas.getBoundingClientRect();
+
+  const W=rect.width;
+  const H=rect.height;
+
+  spectrumCtx.clearRect(
+    0,0,W,H
+  );
+
+  spectrumCtx.fillStyle="#080a0f";
+
+  spectrumCtx.fillRect(
+    0,0,W,H
+  );
+
+  if(!frequencyData) return;
+
+  const bars=180;
+
+  const step =
+    frequencyData.length/bars;
+
+  const barW =
+    W/bars;
+
+  for(let i=0;i<bars;i++){
+
+    const index =
+      Math.floor(i*step);
+
+    const value =
+      frequencyData[index]/255;
+
+    const barH =
+      value*H*.9;
+
+    spectrumCtx.fillStyle=
+      "rgba(90,205,255,.8)";
+
+    spectrumCtx.fillRect(
+      i*barW,
+      H-barH,
+      Math.max(1,barW-1),
+      barH
+    );
+  }
+
+  /*
+    주파수 눈금
+  */
+
+  spectrumCtx.fillStyle=
+    "rgba(255,255,255,.35)";
+
+  spectrumCtx.font="10px sans-serif";
+
+  const labels=[
+    "20Hz",
+    "100Hz",
+    "500Hz",
+    "1kHz",
+    "5kHz",
+    "10kHz",
+    "20kHz"
+  ];
+
+  const values=[
+    20,100,500,1000,5000,10000,20000
+  ];
+
+  for(let i=0;i<values.length;i++){
+
+    const x=
+      Math.log10(values[i]/20)/
+      Math.log10(20000/20)*W;
+
+    spectrumCtx.fillText(
+      labels[i],
+      Math.max(0,x-12),
+      H-5
+    );
+  }
+}
+
+
+/* ==========================================
+   메인 루프
+========================================== */
+
+function loop(){
+
+  if(!running) return;
+
+  const result =
+    analyse();
+
+  if(result){
+
+    freqEl.textContent =
+      result.frequency.toFixed(1);
+
+    levelEl.textContent =
+      Math.min(
+        100,
+        result.peak/255*100
+      ).toFixed(1);
+
+    updateDepth(result);
+  }
+
+  drawDepthMap();
+
+  drawSpectrum();
+
+  animationId =
+    requestAnimationFrame(loop);
+}
+
+
+/* ==========================================
+   스캔 버튼
+========================================== */
+
+scanButton.addEventListener("click",()=>{
+
+  if(!audioContext){
+
+    startMicrophone();
+    return;
+  }
+
+  running=!running;
+
+  if(running){
+
+    scanButton.textContent=
+      "스캔 중지";
+
+    statusEl.textContent=
+      "● 측정 중";
+
+    animationId=
+      requestAnimationFrame(loop);
+
+  }else{
+
+    scanButton.textContent=
+      "스캔 시작";
+
+    statusEl.textContent=
+      "● 일시정지";
+
+    cancelAnimationFrame(
+      animationId
+    );
+  }
+});
+
+
+/* ==========================================
+   첫 시작
+========================================== */
+
+startButton.addEventListener(
+  "click",
+  startMicrophone
+);
+
+
+/* ==========================================
+   초기화
+========================================== */
+
+clearButton.addEventListener("click",()=>{
+
+  depthData.fill(0);
+
+  measurementCount=0;
+
+  countEl.textContent="0";
+
+  freqEl.textContent="--";
+
+  levelEl.textContent="--";
+
+  drawDepthMap();
+});
+
+
+/* ==========================================
+   시작
+========================================== */
+
+resize();
+
+drawDepthMap();
+
+</script>
+
+</body>
+</html>  margin:8px 0 0;
 }
 
 main{
